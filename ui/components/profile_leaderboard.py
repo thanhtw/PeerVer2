@@ -68,7 +68,9 @@ class ProfileLeaderboardSidebar:
         if user_badges:
             for badge in user_badges[:4]:  # Limit to 4 badges
                 icon = badge.get("icon", "🏅")
-                badge_html += f'<span class="badge-icon-fixed">{icon}</span>'
+                badge_name = badge.get("name", "Badge") # Assume 'name' key exists
+                escaped_badge_name = html.escape(badge_name)
+                badge_html += f'<span class="badge-icon-fixed" title="{escaped_badge_name}">{icon}</span>'
         else:
             badge_html = '<span class="badge-icon-fixed">🏅</span>'
         
@@ -193,7 +195,18 @@ class ProfileLeaderboardSidebar:
                     rank_class = ""
                 
                 # Get badge icons
-                badge_icons = "".join([badge.get("icon", "🏅") for badge in badges])
+                badge_icons_html = ""
+                for badge_item in badges:
+                    icon = badge_item.get("icon", "🏅")
+                    name = badge_item.get("name", "Badge")
+                    escaped_name = html.escape(name)
+                    badge_icons_html += f'<span class="badge-icon-fixed" title="{escaped_name}">{icon}</span>'
+                
+                # Ensure badge_icons_html is a string before escaping (it already is)
+                # No, we are injecting HTML, so we don't escape badge_icons_html itself.
+                # The individual names *within* it are already escaped.
+                # escaped_badge_icons = html.escape(str(badge_icons_html)) # This would double-escape and show raw HTML
+                # Instead, use badge_icons_html directly
                 
                 # Current user styling
                 current_class = "current-user-enhanced" if is_current else ""
@@ -210,8 +223,8 @@ class ProfileLeaderboardSidebar:
                 
                 user_name_content = "".join(user_name_parts)
 
-                # Ensure badge_icons is a string before escaping
-                escaped_badge_icons = html.escape(str(badge_icons))
+                # Ensure badge_icons_html is a string before escaping
+                # No longer needed as badge_icons_html is already constructed HTML string.
 
                 item_html_parts = [
                     f'<div class="leaderboard-item-enhanced {current_class}">',
@@ -220,7 +233,7 @@ class ProfileLeaderboardSidebar:
                     f'        <div class="user-name-enhanced">',
                     f'            {user_name_content}',
                     f'        </div>',
-                    f'        <div class="user-badges-enhanced">{escaped_badge_icons}</div>',
+                    f'        <div class="user-badges-enhanced">{badge_icons_html}</div>', # Use the generated HTML directly
                     f'    </div>',
                     f'    <div class="user-points-enhanced">',
                     f'        <div class="points-number">{points:,}</div>', # points is an int
