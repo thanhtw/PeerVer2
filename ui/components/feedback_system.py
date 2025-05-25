@@ -77,9 +77,9 @@ class FeedbackSystem:
         # Get the latest review analysis
         latest_analysis = latest_review.analysis if latest_review else None
         
-        # Update user statistics if AuthUI is provided and we have analysis
-        if self.auth_ui and latest_analysis:
-            self._update_user_statistics(state, latest_analysis)
+        # # Update user statistics if AuthUI is provided and we have analysis
+        # if self.auth_ui and latest_analysis:
+        #     self._update_user_statistics(state, latest_analysis)
         
         # Get user ID from session state
         user_id = st.session_state.auth.get("user_id") if "auth" in st.session_state else None

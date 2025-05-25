@@ -6,6 +6,7 @@ and handling student review input.
 """
 
 import streamlit as st
+import time
 import logging
 import datetime
 from typing import List, Dict, Any, Optional, Callable
@@ -130,7 +131,7 @@ class CodeDisplayUI:
                 st.markdown(f'<div class="guidance-title"><span class="guidance-icon">📝</span> {t("previous_review")}</div>', unsafe_allow_html=True)
                 st.markdown(
                     f'<div class="review-history-box">'
-                    f'<pre>{student_review}</pre>'
+                    f'<pre style="margin: 0; white-space: pre-wrap; font-size: 0.85rem; color: var(--text);">{student_review}</pre>'
                     f'</div>',
                     unsafe_allow_html=True
                 )
@@ -227,14 +228,15 @@ class CodeDisplayUI:
         
         return False
 
-
-def render_review_tab(workflow, code_display_ui):
+def render_review_tab(workflow, code_display_ui, auth_ui=None):
     """
     Render the review tab UI with proper state access.
+    Now accepts auth_ui parameter for immediate stats updates.
     
     Args:
         workflow: JavaCodeReviewGraph workflow
         code_display_ui: CodeDisplayUI instance for displaying code
+        auth_ui: Optional AuthUI instance for updating stats
     """
     st.subheader(f"{t('review_java_code')}")
     
@@ -258,7 +260,7 @@ def render_review_tab(workflow, code_display_ui):
     )
     
     # Handle review submission logic
-    _handle_review_submission(workflow, code_display_ui)
+    _handle_review_submission(workflow, code_display_ui, auth_ui)
 
 
 def _extract_known_problems(state) -> List[str]:
@@ -281,9 +283,8 @@ def _extract_known_problems(state) -> List[str]:
     
     return known_problems
 
-
-def _handle_review_submission(workflow, code_display_ui):
-    """Handle the review submission logic."""
+def _handle_review_submission(workflow, code_display_ui, auth_ui=None):
+    """Handle the review submission logic with immediate stats update."""
     # Get current review state
     state = st.session_state.workflow_state
     current_iteration = getattr(state, 'current_iteration', 1)
@@ -330,13 +331,47 @@ def _handle_review_submission(workflow, code_display_ui):
     else:
         if review_sufficient or all_errors_found:
             st.success(f"{t('all_errors_found')}")
+            
+            if auth_ui and review_analysis:
+                try:
+                    # Update user statistics
+                    accuracy = review_analysis.get(t("accuracy_percentage"), 
+                                                 review_analysis.get(t("identified_percentage"), 0))
+                    identified_count = review_analysis.get(t("identified_count"), 0)
+                    
+                    # Create a unique key to prevent duplicate updates
+                    stats_key = f"review_tab_stats_updated_{current_iteration}_{identified_count}"
+                    
+                    if stats_key not in st.session_state:
+                        logger.debug(f"Updating stats immediately: accuracy={accuracy:.1f}%, score={identified_count}")
+                        result = auth_ui.update_review_stats(accuracy, identified_count)
+                        
+                        if result and result.get("success", False):
+                            logger.debug("Stats updated successfully in review tab")
+                            st.session_state[stats_key] = True
+                            
+                            # Update session state with new values
+                            if "auth" in st.session_state and "user_info" in st.session_state.auth:
+                                user_info = st.session_state.auth["user_info"]
+                                if "reviews_completed" in result:
+                                    user_info["reviews_completed"] = result["reviews_completed"]
+                                if "score" in result:
+                                    user_info["score"] = result["score"]
+                                    
+                                logger.debug(f"Updated session state: reviews={user_info.get('reviews_completed')}, score={user_info.get('score')}")
+                        else:
+                            logger.error(f"Failed to update stats in review tab: {result}")
+                            
+                except Exception as e:
+                    logger.error(f"Error updating stats in review tab: {str(e)}")
+            
+            # Now switch to feedback tab
             if not st.session_state.get("feedback_tab_switch_attempted", False):
                 st.session_state.feedback_tab_switch_attempted = True
                 st.session_state.active_tab = 2
                 st.rerun()
         else:
             st.warning(t("iterations_completed").format(max_iterations=max_iterations))
-
 
 def _process_student_review(workflow, student_review: str) -> bool:
     """Process a student review with progress indicator."""
@@ -393,6 +428,7 @@ def _process_student_review(workflow, student_review: str) -> bool:
             # Complete
             status.update(label=t("analysis_complete"), state="complete")
             st.rerun()
+            
             
             return True
             

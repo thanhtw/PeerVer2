@@ -238,10 +238,6 @@ class AuthUI:
         if not st.session_state.auth.get("is_authenticated", False):
             return {"success": False, "error": "User not authenticated"}
                 
-        # Skip for demo user
-        if st.session_state.auth.get("user_id") == "demo-user":
-            return {"success": True, "message": "Demo user - no updates needed"}
-                
         # Update stats in the database
         user_id = st.session_state.auth.get("user_id")
         
@@ -263,8 +259,8 @@ class AuthUI:
                 # Update reviews_completed and score in session state
                 st.session_state.auth["user_info"]["reviews_completed"] = result.get("reviews_completed", 0)
                 st.session_state.auth["user_info"]["score"] = result.get("score", 0)
-                logger.debug(f"Updated session state: reviews={result.get('reviews_completed')}, score={result.get('score')}")
-            
+                logger.info(f"Updated session state: reviews={result.get('reviews_completed')}, score={result.get('score')}")
+
             # Update session state if level changed
             if result.get("level_changed", False):
                 new_level = result.get("new_level")
@@ -274,6 +270,7 @@ class AuthUI:
                     current_language = get_current_language()
                     st.session_state.auth["user_info"][f"level_name_{current_language}"] = new_level
                     logger.debug(f"Updated user level in session to: {new_level}")
+                    
         else:
             err_msg = result.get('error', 'Unknown error') if result else "No result returned"
             logger.error(f"Failed to update review stats: {err_msg}")

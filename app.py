@@ -182,7 +182,7 @@ def main():
         code_generator_ui.render(user_level)
     
     with tabs[1]:
-        render_review_tab(workflow, code_display_ui)
+        render_review_tab(workflow, code_display_ui, auth_ui)
     
     with tabs[2]:
         render_feedback_tab(workflow, auth_ui)
