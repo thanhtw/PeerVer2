@@ -526,7 +526,7 @@ class FeedbackSystem:
     def _update_user_statistics(self, state, latest_analysis):
         """
         Update user statistics based on review performance.
-        Now with level-up animation.
+        Now with level-up animation and proper session state refresh.
         
         Args:
             state: The workflow state
@@ -536,7 +536,7 @@ class FeedbackSystem:
         current_iteration = getattr(state, 'current_iteration', 1)
         identified_count = latest_analysis[t("identified_count")]
         stats_key = f"stats_updated_{current_iteration}_{identified_count}"
-    
+
         if stats_key not in st.session_state and stats_key not in self.stats_updates:
             try:
                 # Extract accuracy and identified_count from the latest review
@@ -557,8 +557,32 @@ class FeedbackSystem:
                 if result and result.get("success", False):
                     logger.debug(f"Successfully updated user statistics: {result}")
                     
-                    # Add explicit UI message about the update
-                    #st.success(f"Statistics updated! Added {identified_count} to your score.")
+                    # **FIX: Update session state with new values**
+                    if "auth" in st.session_state and "user_info" in st.session_state.auth:
+                        # Update the session state with new values from the database result
+                        new_reviews_completed = result.get("reviews_completed")
+                        new_score = result.get("score")
+                        
+                        if new_reviews_completed is not None:
+                            st.session_state.auth["user_info"]["reviews_completed"] = new_reviews_completed
+                            logger.debug(f"Updated session reviews_completed to: {new_reviews_completed}")
+                        
+                        if new_score is not None:
+                            st.session_state.auth["user_info"]["score"] = new_score
+                            logger.debug(f"Updated session score to: {new_score}")
+                        
+                        # Update level if it changed
+                        if result.get("level_changed", False):
+                            new_level = result.get("new_level")
+                            if new_level:
+                                # Update both level formats that might be used
+                                st.session_state.auth["user_info"]["level"] = new_level
+                                # Also update the language-specific level names if they exist
+                                current_lang = get_current_language()
+                                level_key = f"level_name_{current_lang}"
+                                if level_key in st.session_state.auth["user_info"]:
+                                    st.session_state.auth["user_info"][level_key] = new_level
+                                logger.debug(f"Updated session level to: {new_level}")
                     
                     # Show level promotion message and animation if level changed
                     if result.get("level_changed", False):
@@ -605,7 +629,7 @@ class FeedbackSystem:
 
     def render_badge_showcase(self, user_id: str) -> None:
         """
-        Render the user's earned badges in a visually appealing way.
+        Render the user's earned badges in a gallery-like view organized by category.
         
         Args:
             user_id: The user's ID
@@ -619,7 +643,7 @@ class FeedbackSystem:
         
         st.subheader(f"🏆 {t('achievement_badges')}")
         
-        # Group badges by category
+        # Group badges by category and sort
         badge_categories = {}
         for badge in badges:
             category = badge.get("category", "Other")
@@ -627,33 +651,72 @@ class FeedbackSystem:
                 badge_categories[category] = []
             badge_categories[category].append(badge)
         
-        # Create tabs for each category
-        if badge_categories:
-            tabs = st.tabs(list(badge_categories.keys()))
+        # Sort categories for consistent display
+        sorted_categories = sorted(badge_categories.items())
+        
+        # Display badges by category in a single gallery view
+        if sorted_categories:
+            st.markdown('<div class="badge-gallery-container">', unsafe_allow_html=True)
             
-            for i, (category, category_badges) in enumerate(badge_categories.items()):
-                with tabs[i]:
-                    col_count = min(3, len(category_badges))
-                    cols = st.columns(col_count)
+            for category, category_badges in sorted_categories:
+                # Category header
+                # st.markdown(f'''
+                # <div class="badge-category-header">
+                #     <h3 class="badge-category-title">📂 {category}</h3>
+                # </div>
+                # ''', unsafe_allow_html=True)
+                
+                # Calculate grid columns based on badge count
+                badge_count = len(category_badges)
+                if badge_count == 1:
+                    grid_class = "badge-grid-1"
+                elif badge_count == 2:
+                    grid_class = "badge-grid-2"
+                elif badge_count <= 4:
+                    grid_class = "badge-grid-3"
+                else:
+                    grid_class = "badge-grid-4"
+                
+                # Create badge grid
+                st.markdown(f'<div class="badge-grid {grid_class}">', unsafe_allow_html=True)
+                
+                # Display badges
+                for badge in category_badges:
+                    # Format date
+                    awarded_at_value = badge.get("awarded_at", "")
+                    if isinstance(awarded_at_value, datetime.datetime):
+                        awarded_at = awarded_at_value.strftime("%Y-%m-%d")
+                    else:
+                        awarded_at = str(awarded_at_value).split(' ')[0] if awarded_at_value else ""
                     
-                    for j, badge in enumerate(category_badges):
-                        col_idx = j % col_count
-                        with cols[col_idx]:
-                            awarded_at_value = badge.get("awarded_at", "")
-                            if isinstance(awarded_at_value, datetime.datetime):
-                                awarded_at = awarded_at_value.strftime("%Y-%m-%d")  # Format as YYYY-MM-DD
-                            else:
-                                # Fallback to original string split if it's not a datetime
-                                awarded_at = str(awarded_at_value).split(' ')[0] if awarded_at_value else ""
-                            st.markdown(f"""
-                            <div style="text-align: center; padding: 15px; background-color: rgba(100, 100, 255, 0.1); 
-                                        border-radius: 10px; margin-bottom: 15px;">
-                                <div style="font-size: 3rem;">{badge.get("icon", "🏅")}</div>
-                                <div style="font-weight: bold; margin: 5px 0;">{badge.get("name", "Badge")}</div>
-                                <div style="font-size: 0.8rem; color: #666;">{badge.get("description", "")}</div>
-                                <div style="font-size: 0.7rem; margin-top: 10px;">Earned on {awarded_at}</div>
-                            </div>
-                            """, unsafe_allow_html=True)
+                    # Badge card
+                    st.markdown(f'''
+                    <div class="badge-card">
+                        <div class="badge-icon">{badge.get("icon", "🏅")}</div>
+                        <div class="badge-name">{badge.get("name", "Badge")}</div>
+                        <div class="badge-description">{badge.get("description", "")}</div>
+                        <div class="badge-date">📅 {awarded_at}</div>
+                    </div>
+                    ''', unsafe_allow_html=True)
+                
+                st.markdown('</div>', unsafe_allow_html=True)  # Close badge-grid
+                
+                # Add spacing between categories (except for the last one)
+                if category != sorted_categories[-1][0]:
+                    st.markdown('<div class="badge-category-spacer"></div>', unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)  # Close badge-gallery-container
+        
+        # Add summary statistics
+        total_badges = len(badges)
+        total_categories = len(badge_categories)
+        
+        st.markdown(f'''
+        <div class="badge-summary">
+            <div class="badge-summary-title">🎯 Badge Collection Summary:</div>
+            <div class="badge-summary-stats">{total_badges} total badges earned across {total_categories} categories</div>
+        </div>
+        ''', unsafe_allow_html=True)
 
     def render_progress_dashboard(self, user_id: str) -> None:
         """
@@ -786,6 +849,41 @@ class FeedbackSystem:
         
         st.plotly_chart(fig, use_container_width=True)
 
+    def refresh_user_profile_data(self):
+        """
+        Refresh user profile data from the database to ensure UI shows current values.
+        Call this after updating user statistics.
+        """
+        if not self.auth_ui or not self.auth_ui.is_authenticated():
+            return
+        
+        try:
+            user_id = st.session_state.auth.get("user_id")
+            if user_id:
+                # Get fresh data from database
+                profile_result = self.auth_ui.auth_manager.get_user_profile(user_id)
+                
+                if profile_result and profile_result.get("success", False):
+                    # Update session state with fresh data
+                    user_info = st.session_state.auth.get("user_info", {})
+                    
+                    # Update key fields that are displayed in the profile
+                    user_info["reviews_completed"] = profile_result.get("reviews_completed", 0)
+                    user_info["score"] = profile_result.get("score", 0)
+                    
+                    # Update level information
+                    current_lang = get_current_language()
+                    level_key = f"level_name_{current_lang}"
+                    if level_key in profile_result:
+                        user_info[level_key] = profile_result[level_key]
+                        user_info["level"] = profile_result[level_key]
+                    
+                    st.session_state.auth["user_info"] = user_info
+                    logger.debug("Refreshed user profile data from database")
+                    
+        except Exception as e:
+            logger.error(f"Error refreshing user profile data: {str(e)}")
+            
 def render_feedback_tab(workflow, auth_ui=None):
     """
     Render the feedback and analysis tab with enhanced visualization 

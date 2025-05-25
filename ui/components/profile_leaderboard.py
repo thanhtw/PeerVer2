@@ -174,7 +174,7 @@ class ProfileLeaderboardSidebar:
             items_html = ""
             for i, leader in enumerate(leaders[:6]):  # Show top 6
                 rank = leader.get("rank", i + 1)
-                name = leader.get("display_name", "Unknown")[:10]  # Truncate long names
+                usname = leader.get("display_name", "Unknown")[:10]  # Truncate long names
                 level = leader.get("level", "basic").capitalize()
                 points = leader.get("total_points", 0)
                 badges = leader.get("top_badges", [])[:3]
@@ -215,7 +215,7 @@ class ProfileLeaderboardSidebar:
                 # Build individual item HTML
                 # Construct user_name_content carefully
                 user_name_parts = [
-                    html.escape(str(name)), # Ensure name is string before escape
+                    html.escape(str(usname)), # Ensure name is string before escape
                     f'<span class="user-level-tag">{html.escape(str(level))}</span>' # Ensure level is string
                 ]
                 if current_indicator: # current_indicator is already HTML string or empty string

@@ -419,4 +419,6 @@ class AuthUI:
         if st.button(f"{t('logout')}", key="enhanced_logout", use_container_width=True):
             self.logout()
 
+    
+
         
