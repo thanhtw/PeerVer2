@@ -48,9 +48,10 @@ class ProfileLeaderboardSidebar:
         """Extract user data with language support."""
         current_lang = get_current_language()
         display_name = user_info.get(f"display_name_{current_lang}", 
-                                   user_info.get("display_name", "User"))
+                                user_info.get("display_name", "User"))
         level = user_info.get(f"level_name_{current_lang}", 
                             user_info.get("level", "basic")).capitalize()
+        # Use get() with default values to handle missing fields
         reviews_completed = user_info.get("reviews_completed", 0)
         score = user_info.get("score", 0)
         return display_name, level, reviews_completed, score

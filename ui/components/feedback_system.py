@@ -598,7 +598,8 @@ class FeedbackSystem:
                             st.success(f"🎉 Congratulations! Your level has been upgraded from {old_level} to {new_level}!")
                         
                         # Give the database a moment to complete the update
-                        time.sleep(0.5)
+                        time.sleep(1)
+                        st.rerun()
                 else:                 
                     logger.error(f"{t('failed_update_statistics')}:")
                     st.error(f"{t('failed_update_statistics')}:")

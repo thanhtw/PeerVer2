@@ -35,7 +35,6 @@ class BadgeManager:
         # Get current language on initialization and update when needed
         self.current_language = get_current_language()
     
-
     def award_points(self, user_id: str, points: int, activity_type: str, details: str = None) -> Dict[str, Any]:
         """
         Award points to a user and log the activity.
