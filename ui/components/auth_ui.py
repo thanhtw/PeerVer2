@@ -51,7 +51,7 @@ class AuthUI:
             bool: True if user is authenticated, False otherwise
         """
         
-        st.markdown('<div class="auth-container">', unsafe_allow_html=True)
+        #st.markdown('<div class="auth-container">', unsafe_allow_html=True)
         
         # Header with logo and title
         st.markdown(f"""
@@ -66,7 +66,7 @@ class AuthUI:
         
         with col1:
             # Login form - unchanged
-            st.markdown('<div class="auth-form">', unsafe_allow_html=True)
+            #st.markdown('<div class="auth-form">', unsafe_allow_html=True)
             st.markdown(f'<h3>{t("login")}</h3>', unsafe_allow_html=True)
             
             email = st.text_input(t("email"), key="login_email")
@@ -102,7 +102,7 @@ class AuthUI:
         
         with col2:
             # Registration form - updated to use t() function
-            st.markdown('<div class="auth-form">', unsafe_allow_html=True)
+            #st.markdown('<div class="auth-form">', unsafe_allow_html=True)
             st.markdown(f'<h3>{t("register")}</h3>', unsafe_allow_html=True)
             
             # Get the current language

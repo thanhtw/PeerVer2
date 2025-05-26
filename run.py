@@ -7,5 +7,5 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8505))
     
     # Set the host to 0.0.0.0 to make it accessible from any IP
-    sys.argv = ["streamlit", "run", "app.py", "--server.port", str(port), "--server.address", "0.0.0.0"]
+    sys.argv = ["streamlit", "run", "app.py", "--server.port", str(port), "--server.address", "0.0.0.0", "--theme.base", "light"]
     sys.exit(stcli.main())

@@ -167,8 +167,8 @@ def main():
     tab_labels = [
         t("tab_generate"), 
         t("tab_review"), 
-        t("tab_feedback"),
-        t("tab_logs")
+        t("tab_feedback")
+        #t("tab_logs")
     ]
     
     # Use the enhanced tabs function
@@ -187,8 +187,8 @@ def main():
     with tabs[2]:
         render_feedback_tab(workflow, auth_ui)
         
-    with tabs[3]:  
-        render_llm_logs_tab()
+    # with tabs[3]:  
+    #     render_llm_logs_tab()
 
 if __name__ == "__main__":
     main()

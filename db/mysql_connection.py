@@ -39,8 +39,8 @@ class MySQLConnection:
         # Get database configuration from environment variables
         self.db_host = os.getenv("DB_HOST", "localhost")
         self.db_user = os.getenv("DB_USER", "java_review_user")
-        self.db_password = os.getenv("DB_PASSWORD", "Selab@232")
-        self.db_name = os.getenv("DB_NAME", "java_review_trainer")
+        self.db_password = os.getenv("DB_PASSWORD", "Thomas123!")
+        self.db_name = os.getenv("DB_NAME", "java_review_db")
         self.db_port = int(os.getenv("DB_PORT", "3306"))
         
         # Initialize connection to None
@@ -85,6 +85,8 @@ class MySQLConnection:
                 password=self.db_password,
                 port=self.db_port
             )
+
+            print("init_conn: ", init_conn)
             
             cursor = init_conn.cursor()
             
